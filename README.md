@@ -1,16 +1,3 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-- [Micro Egg Hatchery 🐣](#micro-egg-hatchery-)
-  - [Installation](#installation)
-  - [Usage](#usage)
-  - [API](#api)
-    - [Hatch](#hatch)
-    - [Breed](#breed)
-    - [Tool](#tool)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 # Micro Egg Hatchery 🐣
 
 > 🥚 Eggs are the new 🦆 ducks.
@@ -33,6 +20,20 @@ test('counter egg increments in one', () => {
   expect(getCount(store.getState())).toBe(1)
 })
 ```
+
+## Contents
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [API](#api)
+  - [Hatch](#hatch)
+  - [Breed](#breed)
+  - [Tool](#tool)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Installation
 
