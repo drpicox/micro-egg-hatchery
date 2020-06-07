@@ -1,6 +1,6 @@
 {
   "name": "micro-egg-hatchery",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "dist/index.js",
   "types": "dist/index.ts",
   "author": "David Rodenas",
