@@ -5,7 +5,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = hatch;
 
-const makeBreedEgg = require("./makeBreedEgg");
+const makeBreedEgg = require('./makeBreedEgg');
 
 function hatchEgg(egg, tools, hatchedEggs) {
   if (hatchedEggs.has(egg)) return;
@@ -22,13 +22,13 @@ function hatch(...eggs) {
   const hatchedEggs = new Set();
 
   const checkNoHatched = () => {
-    if (isHatched) throw new Error("cannot use tools once the egg is hatched");
+    if (isHatched) throw new Error('cannot use tools once the egg is hatched');
   };
 
   const tools = {
     tool(name, value) {
       checkNoHatched();
-      tools[name] = typeof value === "function" ? (...args) => {
+      tools[name] = typeof value === 'function' ? (...args) => {
         checkNoHatched();
         value(...args);
       } : value;

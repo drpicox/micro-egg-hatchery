@@ -10,7 +10,7 @@ module.exports = function () {
   return [({
     tool
   }) => {
-    tool("breed", function (name, rawFactory) {
+    tool('breed', function (name, rawFactory) {
       const uberFactory = factories[name];
 
       const factory = () => {
