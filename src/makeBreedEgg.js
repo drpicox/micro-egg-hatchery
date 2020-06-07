@@ -5,21 +5,17 @@ module.exports = function makeBreedEgg() {
   const factories = Object.create(null)
 
   const breedEgg = ({tool}) => {
-    tool('breed', function breed(name, factory) {
+    tool('breed', function breed(name, rawFactory) {
       const uberFactory = factories[name]
-      const localBreeds = Object.create(breeds)
-      defineProperty(localBreeds, name, {get: uberFactory})
+      const factory = () => {
+        defineProperty(breeds, name, {get: uberFactory, configurable: true})
+        const value = rawFactory(breeds)
+        defineProperty(breeds, name, {value, configurable: true})
+        return value
+      }
       factories[name] = factory
 
-      defineProperty(breeds, name, {
-        get() {
-          const value = factory(localBreeds)
-          defineProperty(breeds, name, {value, configurable: true})
-          delete factories[name]
-          return value
-        },
-        configurable: true,
-      })
+      defineProperty(breeds, name, {get: factory, configurable: true})
     })
   }
 

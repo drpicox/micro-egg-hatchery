@@ -13,10 +13,25 @@ function hatchEggs(eggs, tools, hatchedEggs) {
 }
 
 export default function hatch(...eggs) {
+  let isHatched = false
   const hatchedEggs = new Set()
+  const checkNoHatched = () => {
+    if (isHatched) throw new Error('cannot use tools once the egg is hatched')
+  }
+
   const tools = {
     tool(name, value) {
-      tools[name] = value
+      checkNoHatched()
+      tools[name] =
+        typeof value === 'function'
+          ? (...args) => {
+              checkNoHatched()
+              value(...args)
+            }
+          : value
+    },
+    isHatched() {
+      return isHatched
     },
   }
 
@@ -24,6 +39,8 @@ export default function hatch(...eggs) {
 
   hatchEgg(breedEgg, tools, hatchedEggs)
   hatchEggs(eggs, tools, hatchedEggs)
+  isHatched = true
+  delete tools.tool
 
   return getBreed()
 }

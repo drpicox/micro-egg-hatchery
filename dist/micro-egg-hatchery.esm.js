@@ -1,4 +1,4 @@
-var makeBreedEgg = require('./makeBreedEgg');
+var makeBreedEgg = require("./makeBreedEgg");
 
 function hatchEgg(egg, tools, hatchedEggs) {
   if (hatchedEggs.has(egg)) return;
@@ -13,10 +13,23 @@ function hatchEggs(eggs, tools, hatchedEggs) {
 }
 
 function hatch() {
+  var _isHatched = false;
   var hatchedEggs = new Set();
+
+  var checkNoHatched = function () {
+    if (_isHatched) throw new Error("cannot use tools once the egg is hatched");
+  };
+
   var tools = {
     tool: function tool(name, value) {
-      tools[name] = value;
+      checkNoHatched();
+      tools[name] = typeof value === "function" ? function () {
+        checkNoHatched();
+        value.apply(void 0, arguments);
+      } : value;
+    },
+    isHatched: function isHatched() {
+      return _isHatched;
     }
   };
 
@@ -31,6 +44,8 @@ function hatch() {
   }
 
   hatchEggs(eggs, tools, hatchedEggs);
+  _isHatched = true;
+  delete tools.tool;
   return getBreed();
 }
 

@@ -89,11 +89,11 @@ test('breed defines a new symbol', () => {
     breed('chick', () => 'I am a chick')
   }
 
-  const hatchings = hatch(chickenEgg)
-  expect(hatchings.chick).toBe('I am a chick')
+  const breeds = hatch(chickenEgg)
+  expect(breeds.chick).toBe('I am a chick')
 })
 
-test('breedFn receives other hatchings', () => {
+test('breed factory function receives other breeds', () => {
   function oneEgg({breed}) {
     breed('one', () => 1)
   }
@@ -103,12 +103,12 @@ test('breedFn receives other hatchings', () => {
   }
 
   const egg = [oneEgg, twoEgg]
-  const hatchings = hatch(egg)
-  expect(hatchings.one).toBe(1)
-  expect(hatchings.two).toBe(2)
+  const breeds = hatch(egg)
+  expect(breeds.one).toBe(1)
+  expect(breeds.two).toBe(2)
 })
 
-test('breedFn receives other hatchings without care of the order', () => {
+test('breed factory function receives other breeds without care of the order', () => {
   function threeEgg({breed}) {
     breed('three', ({one, two}) => one + two)
   }
@@ -122,13 +122,13 @@ test('breedFn receives other hatchings without care of the order', () => {
   }
 
   const egg = [threeEgg, oneEgg, twoEgg]
-  const hatchings = hatch(egg)
-  expect(hatchings.one).toBe(1)
-  expect(hatchings.two).toBe(2)
-  expect(hatchings.three).toBe(3)
+  const breeds = hatch(egg)
+  expect(breeds.one).toBe(1)
+  expect(breeds.two).toBe(2)
+  expect(breeds.three).toBe(3)
 })
 
-test('breedFn is executed when it is needed', () => {
+test('breed factory function is executed when it is needed', () => {
   const log = ['setup']
 
   function logThree({breed}) {
@@ -152,14 +152,14 @@ test('breedFn is executed when it is needed', () => {
 
   const egg = [logThree, logOne, logTwo]
   log.push('hatch')
-  const hatchings = hatch(egg)
+  const breeds = hatch(egg)
   log.push('hatched')
-  expect(hatchings.two).toBe(2)
+  expect(breeds.two).toBe(2)
   log.push('end')
   expect(log).toEqual(['setup', 'hatch', 'hatched', 'one', 'two', 'end'])
 })
 
-test('breedFn is called at most once', () => {
+test('breed factory function is called at most once', () => {
   const log = ['setup']
 
   function logThree({breed}) {
@@ -183,11 +183,11 @@ test('breedFn is called at most once', () => {
 
   const egg = [logThree, logOne, logTwo]
   log.push('hatch')
-  const hatchings = hatch(egg)
+  const breeds = hatch(egg)
   log.push('hatched')
-  expect(hatchings.one).toBe(1)
-  expect(hatchings.two).toBe(2)
-  expect(hatchings.three).toBe(3)
+  expect(breeds.one).toBe(1)
+  expect(breeds.two).toBe(2)
+  expect(breeds.three).toBe(3)
   log.push('end')
   expect(log).toEqual([
     'setup',
@@ -203,14 +203,47 @@ test('breedFn is called at most once', () => {
 test('tool', () => {
   function listEgg({tool, breed}) {
     const list = []
-    tool('list', list)
+    tool('addElement', e => list.push(e))
     breed('list', () => list)
   }
 
-  function oneEgg({list}) {
-    list.push('one')
+  function oneEgg({addElement}) {
+    addElement('one')
   }
 
-  const hatchings = hatch(listEgg, oneEgg)
-  expect(hatchings.list).toEqual(['one'])
+  const breeds = hatch(listEgg, oneEgg)
+  expect(breeds.list).toEqual(['one'])
+})
+
+test('isHatched', () => {
+  let foundIsHatched, foundIsHatchedResult
+  function exampleEgg({isHatched, breed}) {
+    foundIsHatched = isHatched
+    foundIsHatchedResult = isHatched()
+    breed('isHatched', () => isHatched())
+  }
+
+  expect(foundIsHatched).toBeUndefined()
+  const breeds = hatch(exampleEgg)
+  expect(foundIsHatchedResult).toBe(false)
+  expect(foundIsHatched()).toBe(true)
+  expect(breeds.isHatched).toBe(true)
+})
+
+test('Tools rod outside hatch', () => {
+  function listEgg({tool, breed}) {
+    const list = []
+    tool('addElement', e => list.push(e))
+    breed('list', () => list)
+  }
+
+  let foundAddElement
+  function hijackEgg({addElement}) {
+    foundAddElement = addElement
+  }
+
+  const breeds = hatch(listEgg, hijackEgg)
+  expect(breeds.list).toEqual([])
+  expect(foundAddElement).toBeInstanceOf(Function)
+  expect(foundAddElement).toThrow()
 })

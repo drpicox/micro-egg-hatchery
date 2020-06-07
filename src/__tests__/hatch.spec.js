@@ -21,6 +21,34 @@ test('breed receives previous breeds', () => {
   expect(chick).toBe(2)
 })
 
+test('deeply receives previous breeds', () => {
+  const egg = ({breed}) => {
+    breed('chick', () => 1)
+    breed('chick', ({chick}) => chick + 2)
+    breed('chick', ({chick}) => chick + 3)
+    breed('chick', ({chick}) => chick + 4)
+  }
+
+  const {chick} = hatch(egg)
+  expect(chick).toBe(10)
+})
+
+test('once breed function finishes, breeds replaces the previous definition by the final definition', () => {
+  let previousChick, foundBreeds
+  const egg = ({breed}) => {
+    breed('chick', breeds => {
+      previousChick = breeds.chick
+      foundBreeds = breeds
+      return 'its a chick'
+    })
+  }
+
+  const {chick} = hatch(egg)
+  expect(previousChick).toBeUndefined()
+  expect(foundBreeds.chick).toBe('its a chick')
+  expect(chick).toBe('its a chick')
+})
+
 test('breed multiple things', () => {
   const egg = ({breed}) => {
     breed('chick', () => true)
@@ -115,15 +143,18 @@ test('eggs hatch once', () => {
 })
 
 test('tool adds more tools to hatch other eggs', () => {
-  const plumageEgg = ({tool}) =>
-    tool('withPlumage', bird => ({...bird, plumage: true}))
+  function familyEgg({breed, tool}) {
+    const family = []
+    tool('addMember', member => family.push(member))
+    breed('family', () => family)
+  }
 
-  const chickenEgg = ({breed, withPlumage}) =>
-    breed('chick', () => withPlumage({chick: true}))
+  function chickenEgg({addMember}) {
+    addMember({type: 'chicken'})
+  }
 
-  const {chick} = hatch(plumageEgg, chickenEgg)
-
-  expect(chick).toEqual({chick: true, plumage: true})
+  const {family} = hatch(familyEgg, chickenEgg)
+  expect(family).toEqual([{type: 'chicken'}])
 })
 
 test('tools are executed before hatching and they are designed to concrete the new breed', () => {

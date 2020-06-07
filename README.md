@@ -29,9 +29,10 @@ test('counter egg increments in one', () => {
 - [Installation](#installation)
 - [Usage](#usage)
 - [API](#api)
-  - [Hatch](#hatch)
-  - [Breed](#breed)
-  - [Tool](#tool)
+  - [# hatch(eggs)](#-hatcheggs)
+  - [# breed](#-breed)
+  - [# tool](#-tool)
+  - [# isHatched](#-ishatched)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -79,14 +80,31 @@ how redux works with eggs.
 
 - https://github.com/drpicox/redux-egg
 
-### Hatch
+### # hatch(eggs)
 
-The hatch function opens an egg.
+The hatch function opens eggs. It executes a series of well-ordered module
+initialization functions and makes their results available. These initialization
+functions are called eggs. It also accepts grouping eggs in arrays; we also call
+those arrays eggs. It allows you to split your application into several eggs;
+they should be small, well-defined, and modular. Glue all your eggs together
+with arrays, with any nesting levels. It also ignores repeated eggs, so you can
+include any egg in your array that you need and do not worry about duplications
+in initializations.
 
 ```typescript
 type Egg = Function | Egg[];
-function hatch(...eggs: Egg[]): Hatchings { ... }
+function hatch(...eggs: Egg[]): Breeds { ... }
 ```
+
+An egg is a function that receives tools and uses them to define new breeds.
+Eggs should return undefined. Hatch accepts one or more eggs; it executes each
+egg function in the same order that it is received. As a result, the hatch
+function returns all the breeds defined by each egg. Hatch accepts eggs inside
+arrays, and arrays inside arrays with eggs with any level of nesting. Hatch
+flattens that array and executes all eggs in order. If there is any egg
+duplicated, it invokes the egg's first occurrence and ignores all subsequent egg
+appearances. Aka, if the same function instance appears twice, it executes when
+it first time and does not call it anymore.
 
 **Example**:
 
@@ -102,8 +120,7 @@ hatch(egg)
 expect(log).toEqual(['opened'])
 ```
 
-<details>
-<summary>You can hatch more than one egg at once:</summary>
+Opening more than one egg at once:
 
 ```javascript
 import hatch from 'micro-egg-hatchery'
@@ -120,10 +137,7 @@ hatch(eggs)
 expect(log).toEqual(['egg1', 'egg2'])
 ```
 
-</details>
-
-<details>
-<summary>And hatch eggs inside other eggs:</summary>
+Nesting eggs inside eggs:
 
 ```javascript
 import hatch from 'micro-egg-hatchery'
@@ -144,10 +158,7 @@ hatch(eggs)
 expect(log).toEqual(['egg1', 'more1', 'more2'])
 ```
 
-</details>
-
-<details>
-<summary>Or eggs inside an arrays of arrays of ... of arrays of eggs:</summary>
+Nesting eggs inside eggs with any arbitrary nesting level:
 
 ```javascript
 import hatch from 'micro-egg-hatchery'
@@ -168,10 +179,7 @@ hatch(eggs)
 expect(log).toEqual(['egg1', 'egg2', 'egg3', 'egg4', 'egg5'])
 ```
 
-</details>
-
-<details>
-<summary>Eggs are hatched once. Even if they are include twice:</summary>
+Opening duplicated eggs once:
 
 ```javascript
 import hatch from 'micro-egg-hatchery'
@@ -186,12 +194,8 @@ hatch(eggs)
 expect(log).toEqual(['egg'])
 ```
 
-</details>
-
-<details>
-<summary>Note that the objective of nesting eggs, 
-and do not execute twice the same egg, is to make possible to include
-your egg dependencies.</summary>
+Note that the objective of nesting eggs, and do not execute twice the same egg,
+is to make possible to include your egg dependencies:
 
 ```javascript
 import hatch from 'micro-egg-hatchery'
@@ -206,18 +210,29 @@ const egg = [usersEgg, moviesEgg, rankingEgg]
 export default egg
 ```
 
-</details>
+### # breed
 
-### Breed
+The Egg Hatchery is a Dependency Injection library for Javascript. It leverages
+the Javascript getters to create a smooth programming experience on all eggs and
+modules and define their properties and needs. The library wires all
+dependencies together, so the programmer does not need to think about running
+order. Each property has a factory function associated. This factory function
+receives all available properties defined by any of the hatched modules; uses
+those properties need to generate its value. Factories execute at most once and
+only if someone outside hatch consumes its result.
 
-All eggs receives the `breed` function. This function allows eggs to create new
-breeds. Breeds are the variables that can be obtained with the `hatch(...)`
-result. But breeds results are not given directly. They are defined, but are
-hatched only under demmand, when their use is required. Because of it, breeds
-receive a `name` and a function that creates this new breed.
+The breed function defines those properties. It receives two parameters the name
+and the breed factory function. The name is the name of the property; it is the
+property name of the breeds object, which corresponds to the generated value of
+the breed factory. The breed factory function receives all other defined breeds
+and produces the result. There is no breed factory function execution before the
+hatch call, although the hatch function returns the breeds object. When any
+piece of code access to that object, and uses one property, hatch automatically
+calls to the breed factory that generates that value and all its corresponding
+dependencies and generates the value.
 
 ```typescript
-function breed(name: string, breedFn: Hatchings): void { ... }
+function breed(name: string, breedFactoryFn: Breeds): void { ... }
 // injected at egg
 function egg({ breed }): void { ... }
 ```
@@ -225,7 +240,7 @@ function egg({ breed }): void { ... }
 **Parameters**:
 
 - `name`: name of the new breed
-- `breedFn`: a function that returns the new breed
+- `breedFactoryFn`: a function that returns the new breed value
 
 **Example**:
 
@@ -236,13 +251,11 @@ function chickenEgg({breed}) {
   breed('chick', () => 'I am a chick')
 }
 
-const hatchings = hatch(chickenEgg)
-expect(hatchings.chick).toBe('I am a chick')
+const breeds = hatch(chickenEgg)
+expect(breeds.chick).toBe('I am a chick')
 ```
 
-<details>
-<summary>The `breedFn` passed to `breed` also 
-receives all the hatchings defined in all eggs.</summary>
+Using breeds defined by other eggs:
 
 ```javascript
 import hatch from 'micro-egg-hatchery'
@@ -256,17 +269,12 @@ function twoEgg({breed}) {
 }
 
 const egg = [oneEgg, twoEgg]
-const hatchings = hatch(egg)
-expect(hatchings.one).toBe(1)
-expect(hatchings.two).toBe(2)
+const breeds = hatch(egg)
+expect(breeds.one).toBe(1)
+expect(breeds.two).toBe(2)
 ```
 
-</details>
-
-<details>
-<summary>The order of breed calls are not important,
-any breedFn can use other hatchings, even if they are
-defined after them.</summary>
+Using breeds in dependency order, not definition order:
 
 ```javascript
 import hatch from 'micro-egg-hatchery'
@@ -284,17 +292,13 @@ function twoEgg({breed}) {
 }
 
 const egg = [threeEgg, oneEgg, twoEgg]
-const hatchings = hatch(egg)
-expect(hatchings.one).toBe(1)
-expect(hatchings.two).toBe(2)
-expect(hatchings.three).toBe(3)
+const breeds = hatch(egg)
+expect(breeds.one).toBe(1)
+expect(breeds.two).toBe(2)
+expect(breeds.three).toBe(3)
 ```
 
-</details>
-<details>
-<summary>The `breedFn` are called only when they are used.
-If their breed is not used in the hatching, then
-they are neved called.</summary>
+Breed factory functions are not executed if not used:
 
 ```javascript
 import hatch from 'micro-egg-hatchery'
@@ -322,16 +326,14 @@ function logTwo({breed}) {
 
 const egg = [logThree, logOne, logTwo]
 log.push('hatch')
-const hatchings = hatch(egg)
+const breeds = hatch(egg)
 log.push('hatched')
-expect(hatchings.two).toBe(2)
+expect(breeds.two).toBe(2)
 log.push('end')
 expect(log).toEqual(['setup', 'hatch', 'hatched', 'one', 'two', 'end'])
 ```
 
-</details>
-<details>
-<summary>The `breedFn` are called at most once.</summary>
+The breed factory functions are called at most once:
 
 ```javascript
 import hatch from 'micro-egg-hatchery'
@@ -359,25 +361,37 @@ function logTwo({breed}) {
 
 const egg = [logThree, logOne, logTwo]
 log.push('hatch')
-const hatchings = hatch(egg)
+const breeds = hatch(egg)
 log.push('hatched')
-expect(hatchings.one).toBe(1)
-expect(hatchings.two).toBe(2)
-expect(hatchings.three).toBe(3)
+expect(breeds.one).toBe(1)
+expect(breeds.two).toBe(2)
+expect(breeds.three).toBe(3)
 log.push('end')
 expect(log).toEqual(['setup', 'hatch', 'hatched', 'one', 'two', 'three', 'end'])
 ```
 
-</details>
+### # tool
 
-### Tool
+The breed function is powerful, but it gives a stable result after
+initialization. Some times, some modules require, or accept, configuration. The
+tool function allows establishing these configurations before any breeding.
 
-All eggs receives tools. There are two tools default for all eggs, and then,
-each egg can define new tools for the following eggs. Unlike breeds, tools are
-affected by the order of execution. Any breed can access to previous tools, but
-not to following tools. Eggs can define new tools with the `tool` function. It
-receives a `name` for the tool, and a value. Next eggs will have access to that
-tools through that name.
+Tools are just the opposite of breeds. If breeds are lazy and order independent,
+tools are eager and order dependent. Tools are available directly in the egg,
+you can use them immediately, but they are order sensitive; you cannot use any
+tool not defined by a previous egg. Two examples of tools are the breed
+function, and the tool function itself. Both methods are available to all eggs
+as tools; they allow eggs to modify configurations for other eggs and the hatch
+result.
+
+Tools execute greedily. Incorrect use may slow down the application boot and
+tests. Think about tools as configuration tools, nothing more. Tools should
+allow defining variables, options, and other things required in your module.
+They should compute nothing. Because configurations affect breed function
+factories, it is the task of the breed function factory to collect all
+configuration values and calculate the result. That automatically removes the
+computation if no one access to the property. This property is especially
+critical for tests.
 
 ```typescript
 function tool(name: string, tool: any): void { ... }
@@ -392,19 +406,69 @@ function egg({ tool, breed, ...otherTools }): void { ... }
 
 **Example**:
 
-```typescript
+```javascript
 import hatch from 'micro-egg-hatchery'
 
 function listEgg({tool, breed}) {
   const list = []
-  tool('list', list)
+  tool('addElement', e => list.push(e))
   breed('list', () => list)
 }
 
-function oneEgg({list}) {
-  list.push('one')
+function oneEgg({addElement}) {
+  addElement('one')
 }
 
-const hatchings = hatch(listEgg, oneEgg)
-expect(hatchings.list).toEqual(['one'])
+const breeds = hatch(listEgg, oneEgg)
+expect(breeds.list).toEqual(['one'])
+```
+
+### # isHatched
+
+Tools are meant to use while the egg is hatching and before any breed instances.
+The `isHatched` returns a boolean.
+
+```typescript
+function isHatched(): boolean { ... }
+```
+
+**Example**:
+
+```javascript
+import hatch from 'micro-egg-hatchery'
+
+let foundIsHatched, foundIsHatchedResult
+function exampleEgg({isHatched, breed}) {
+  foundIsHatched = isHatched
+  foundIsHatchedResult = isHatched()
+  breed('isHatched', () => isHatched())
+}
+
+expect(foundIsHatched).toBeUndefined()
+const breeds = hatch(exampleEgg)
+expect(foundIsHatchedResult).toBe(false)
+expect(foundIsHatched()).toBe(true)
+expect(breeds.isHatched).toBe(true)
+```
+
+All function tools stop working when the egg is hatched:
+
+```javascript
+import hatch from 'micro-egg-hatchery'
+
+function listEgg({tool, breed}) {
+  const list = []
+  tool('addElement', e => list.push(e))
+  breed('list', () => list)
+}
+
+let foundAddElement
+function hijackEgg({addElement}) {
+  foundAddElement = addElement
+}
+
+const breeds = hatch(listEgg, hijackEgg)
+expect(breeds.list).toEqual([])
+expect(foundAddElement).toBeInstanceOf(Function)
+expect(foundAddElement).toThrow()
 ```
